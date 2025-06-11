@@ -1,0 +1,24 @@
+name: Publish
+on:
+  release:
+    types: [created]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: ".nvmrc"
+      - run: npm install
+      - run: npm run build
+      - run: |
+          echo @brokerize:https://registry.npmjs.org > .npmrc
+          echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' >> .npmrc
+      - run: npm publish
+        working-directory: ./
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}

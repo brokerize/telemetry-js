@@ -1,0 +1,8 @@
+.env
+node_modules
+dist
+dist-queueworker
+build
+prisma/generated
+src/buildData.json
+tempo-data
