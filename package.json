@@ -1,6 +1,6 @@
 {
   "name": "@brokerize/telemetry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A telemetry package for metrics and tracing powered by brokerize",
   "keywords": [
     "telemetry",
@@ -10,7 +10,7 @@
   ],
   "main": "dist/index.js",
   "files": [
-    "dist", "README.md"
+    "dist", "README.md", "docs"
   ],
   "exports": {
     ".": {
