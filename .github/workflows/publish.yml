@@ -13,8 +13,19 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: ".nvmrc"
-      - run: npm install
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
       - run: npm run build
+
+      - name: Verify package version matches tag
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Package version ($PKG_VERSION) does not match tag ($TAG_VERSION)"
+            exit 1
+          fi
       - run: |
           echo @brokerize:https://registry.npmjs.org > .npmrc
           echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' >> .npmrc

@@ -10,7 +10,6 @@ export function isKnownRoute(req: Request): boolean {
     return req.app._router.stack.some((layer: Layer) => {
         if (!layer.route || !layer.route.path) return false;
 
-        // Ersetze die Platzhalter durch Regex
         const routeRegex = new RegExp('^' + layer.route.path.replace(/:\w+/g, '[^/]+') + '$');
 
         return routeRegex.test(sanitizedPath);

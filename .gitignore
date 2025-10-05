@@ -6,3 +6,5 @@ build
 prisma/generated
 src/buildData.json
 tempo-data
+coverage
+.vitest

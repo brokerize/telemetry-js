@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./",
+        "declaration": true,
+        "declarationMap": false,
+        "outDir": "dist",
+        "lib": ["ES2021", "DOM"],
+        "sourceMap": true,
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "strictNullChecks": true,
+        "target": "ES2022",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "rewriteRelativeImportExtensions": true
+    },
+    "paths": {
+        "tsoa": ["node_modules/tsoa/dist"]
+    },
+    "strict": false,
+    "ts-node": {
+        "swc": true
+    },
+    "plugins": [
+        {
+            "name": "typescript-strict-plugin",
+            "paths": ["./src", "./test"]
+        }
+    ]
+}
