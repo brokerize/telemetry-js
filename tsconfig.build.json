@@ -1,11 +1,10 @@
 {
-    "compileOnSave": true,
+    "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        "baseUrl": "./",
         "rootDir": "./src",
+        "outDir": "dist",
         "declaration": true,
         "declarationMap": false,
-        "outDir": "dist",
         "lib": ["ES2021", "DOM"],
         "sourceMap": true,
         "module": "NodeNext",
@@ -20,22 +19,15 @@
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "experimentalDecorators": true,
-        "rewriteRelativeImportExtensions": true,
-        "paths": {
-            "tsoa": ["node_modules/tsoa/dist"]
-        },
-        "strict": false,
-        "plugins": [
-            {
-                "name": "typescript-strict-plugin",
-                "paths:": ["./src", "./test"]
-            }
-        ]
+        "rewriteRelativeImportExtensions": true
     },
+    "paths": {
+        "tsoa": ["node_modules/tsoa/dist"]
+    },
+    "strict": false,
     "ts-node": {
         "swc": true
     },
-
-    "include": ["src/**/*", "build/**/*", "test/**/*"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "test/**"]
 }

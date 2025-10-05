@@ -22,7 +22,7 @@ export function getCallerFile() {
             }
         }
     } catch (e) {
-        // Fallback handling
+        // ignore
     }
 
     Error.prepareStackTrace = originalFunc;
