@@ -133,6 +133,25 @@ describe('NodeSDK init/shutdown (integration, ohne Netz)', () => {
             await shutDownInstrumentation();
         });
 
+        it('exporter descriptor: otlp -> OTLPTraceExporter + Headers + default BatchSpanProcessor (no network I/O expected)', async () => {
+            const { traceExporter, spanProcessors } = initInstrumentation({
+                serviceName: 'svc-exporter-otlp',
+                instrumentations: [],
+                exporter: {
+                    kind: 'otlp',
+                    url: 'http://localhost:4318/v1/traces',
+                    concurrencyLimit: 3,
+                    headers: { 'x-api-key': 'secret' }
+                }
+            });
+
+            expect(traceExporter).toBeInstanceOf(OTLPTraceExporter);
+            expect(Array.isArray(spanProcessors)).toBe(true);
+            expect(spanProcessors!.some((p) => p instanceof BatchSpanProcessor)).toBe(true);
+
+            await shutDownInstrumentation();
+        });
+
         it('exporter descriptor: noop -> noop exporter; no processors attached', async () => {
             const { traceExporter, spanProcessors } = initInstrumentation({
                 serviceName: 'svc-exporter-noop',

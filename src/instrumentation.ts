@@ -47,7 +47,7 @@ type NoopFlagged = { [NOOP_EXPORTER_FLAG]?: true };
  */
 export type ExporterInput =
     | SpanExporter
-    | { kind: 'otlp'; url: string; concurrencyLimit?: number }
+    | { kind: 'otlp'; url: string; concurrencyLimit?: number; headers?: Record<string, string> }
     | { kind: 'console' }
     | { kind: 'noop' }
     | undefined;
@@ -67,6 +67,7 @@ function resolveExporter(opts: {
     url?: string;
     localDebugging?: boolean;
     concurrencyLimit?: number;
+    headers?: Record<string, string>;
 }): SpanExporter | undefined {
     if (opts.exporter) {
         if (typeof (opts.exporter as any).export === 'function') {
@@ -81,10 +82,11 @@ function resolveExporter(opts: {
                 diag.info('Using Noop SpanExporter (explicit)');
                 return makeNoopExporter();
             case 'otlp': {
-                const { url, concurrencyLimit = 10 } = e!;
+                const { url, concurrencyLimit = 10, headers } = e!;
                 diag.info('Using OTLPTraceExporter (explicit)');
-                diag.info('collectorOptions: ' + JSON.stringify({ url, concurrencyLimit }));
-                return new OTLPTraceExporter({ url, concurrencyLimit });
+                const headerNames = headers ? Object.keys(headers) : [];
+                diag.info('collectorOptions: ' + JSON.stringify({ url, concurrencyLimit, headerNames }));
+                return new OTLPTraceExporter({ url, concurrencyLimit, headers });
             }
         }
     }
