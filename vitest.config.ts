@@ -36,6 +36,12 @@ export default defineConfig({
                     pool: 'forks',
                     include: ['test/tracing/instrumentation.test.ts']
                 }
+            },
+            {
+                test: {
+                    name: 'utils',
+                    include: ['test/utils/**/*.test.ts']
+                }
             }
         ]
     }

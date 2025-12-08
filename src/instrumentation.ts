@@ -2,6 +2,7 @@ import { diag, DiagConsoleLogger, DiagLogLevel, trace, context, propagation } fr
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { ExportResultCode } from '@opentelemetry/core';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPTraceExporter as OTLPTraceExporterGrpc } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { SpanExporter, SpanLimits, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
@@ -12,6 +13,9 @@ import {
     setEnableSpanLimits,
     maybeWarnLegacy
 } from './tracing/tracing-config.ts';
+import { installInternalCaFromEnv } from './util/bootstrap-ca.ts';
+import * as grpc from '@grpc/grpc-js';
+import * as fs from 'fs';
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
@@ -48,6 +52,7 @@ type NoopFlagged = { [NOOP_EXPORTER_FLAG]?: true };
 export type ExporterInput =
     | SpanExporter
     | { kind: 'otlp'; url: string; concurrencyLimit?: number; headers?: Record<string, string> }
+    | { kind: 'otlp-grpc'; url: string; concurrencyLimit?: number; headers?: Record<string, string> }
     | { kind: 'console' }
     | { kind: 'noop' }
     | undefined;
@@ -87,6 +92,25 @@ function resolveExporter(opts: {
                 const headerNames = headers ? Object.keys(headers) : [];
                 diag.info('collectorOptions: ' + JSON.stringify({ url, concurrencyLimit, headerNames }));
                 return new OTLPTraceExporter({ url, concurrencyLimit, headers });
+            }
+            case 'otlp-grpc': {
+                const { url, concurrencyLimit = 10, headers } = e!;
+                diag.info('Using OTLPTraceExporter (gRPC, explicit)');
+                const headerNames = headers ? Object.keys(headers) : [];
+                diag.info('collectorOptions: ' + JSON.stringify({ url, concurrencyLimit, headerNames }));
+                const metadata = new grpc.Metadata();
+                if (headers) {
+                    for (const [key, value] of Object.entries(headers)) {
+                        metadata.set(key, value);
+                    }
+                }
+
+                return new OTLPTraceExporterGrpc({
+                    url: url,
+                    headers: headers,
+                    concurrencyLimit: concurrencyLimit,
+                    metadata: metadata
+                });
             }
         }
     }
@@ -206,6 +230,10 @@ export interface InitOptions {
      * ]
      */
     spanProcessors?: SpanProcessor[];
+
+    serverCerts?: string[];
+    clientKey?: string[];
+    clientCert?: string[];
 }
 
 /**
@@ -254,6 +282,10 @@ export interface InitOptions {
  */
 export function initInstrumentation(options: InitOptions) {
     diag.info('Initializing OpenTelemetry instrumentation');
+    if (options.serverCerts && options.serverCerts.length > 0) {
+        diag.info('Installing extra internal CA certificates from options');
+        installInternalCaFromEnv(options.serverCerts, options.clientKey, options.clientCert);
+    }
     if (options.instrumentations && options.instrumentations.length > 0) {
         diag.info('Using instrumentations:');
         options.instrumentations.forEach((instrumentation) => {

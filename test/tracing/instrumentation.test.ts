@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { initInstrumentation, shutDownInstrumentation } from '../../src/instrumentation.ts';
 import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import * as bootstrapCa from '../../src/util/bootstrap-ca.ts';
 
 describe('NodeSDK init/shutdown (integration, ohne Netz)', () => {
     it('init mit Default -> no-op Exporter (kein Throw) & shutdown ohne Fehler', async () => {
@@ -103,7 +104,92 @@ describe('NodeSDK init/shutdown (integration, ohne Netz)', () => {
         await shutDownInstrumentation();
     });
 
-    describe('NodeSDK init/shutdown – Exporter/Processor precedence (integration, offline)', () => {
+    describe('certs / bootstrap-ca integration', () => {
+        beforeEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('installs serverCerts if serverCerts are provided', async () => {
+            const spy = vi.spyOn(bootstrapCa, 'installInternalCaFromEnv');
+
+            const certs = [
+                '-----BEGIN CERTIFICATE-----A-----END CERTIFICATE-----',
+                '-----BEGIN CERTIFICATE-----B-----END CERTIFICATE-----'
+            ];
+
+            const { traceExporter, spanProcessors } = initInstrumentation({
+                serviceName: 'svc-extra-certs',
+                instrumentations: [],
+                exporter: { kind: 'noop' },
+                serverCerts: certs
+            });
+
+            expect(spy).toHaveBeenCalledTimes(1);
+            expect(spy).toHaveBeenCalledWith(certs, undefined, undefined);
+
+            expect(process.env.OTEL_EXPORTER_OTLP_CERTIFICATE).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_CERTIFICATE).toContain('internal-ca-bundle.pem');
+
+            expect(traceExporter).toBeTruthy();
+            expect(spanProcessors === undefined || Array.isArray(spanProcessors)).toBe(true);
+
+            await shutDownInstrumentation();
+        });
+
+        it('installs serverCerts, clientKey and clientCert if all are provided', async () => {
+            const spy = vi.spyOn(bootstrapCa, 'installInternalCaFromEnv');
+
+            const certs = [
+                '-----BEGIN CERTIFICATE-----A-----END CERTIFICATE-----',
+                '-----BEGIN CERTIFICATE-----B-----END CERTIFICATE-----'
+            ];
+
+            const clientKey = ['-----BEGIN PRIVATE KEY-----KEYDATA-----END PRIVATE KEY-----'];
+
+            const clientCert = ['-----BEGIN CERTIFICATE-----CLIENTCERTDATA-----END CERTIFICATE-----'];
+
+            initInstrumentation({
+                serviceName: 'svc-extra-certs',
+                instrumentations: [],
+                exporter: { kind: 'noop' },
+                serverCerts: certs,
+                clientKey,
+                clientCert
+            });
+
+            expect(spy).toHaveBeenCalledTimes(1);
+            expect(spy).toHaveBeenCalledWith(certs, clientKey, clientCert);
+
+            expect(process.env.OTEL_EXPORTER_OTLP_CERTIFICATE).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_CERTIFICATE).toContain('internal-ca-bundle.pem');
+
+            expect(process.env.OTEL_EXPORTER_OTLP_CLIENT_KEY).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_CLIENT_KEY).toContain('internal-client-key.pem');
+
+            expect(process.env.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE).toBeDefined();
+            expect(process.env.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE).toContain('internal-client-cert.pem');
+
+            await shutDownInstrumentation();
+        });
+
+        it('does not call installInternalCaFromEnv if Certs are not set', async () => {
+            const spy = vi.spyOn(bootstrapCa, 'installInternalCaFromEnv');
+
+            initInstrumentation({
+                serviceName: 'svc-no-extra-certs',
+                instrumentations: [],
+                exporter: { kind: 'noop' }
+            });
+
+            expect(spy).not.toHaveBeenCalled();
+
+            await shutDownInstrumentation();
+        });
+    });
+
+    describe('NodeSDK init/shutdown - Exporter/Processor precedence (integration, offline)', () => {
         it('exporter descriptor: console -> ConsoleSpanExporter + default BatchSpanProcessor', async () => {
             const { traceExporter, spanProcessors } = initInstrumentation({
                 serviceName: 'svc-exporter-console',
