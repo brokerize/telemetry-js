@@ -91,7 +91,16 @@ function resolveExporter(opts: {
                 diag.info('Using OTLPTraceExporter (explicit)');
                 const headerNames = headers ? Object.keys(headers) : [];
                 diag.info('collectorOptions: ' + JSON.stringify({ url, concurrencyLimit, headerNames }));
-                return new OTLPTraceExporter({ url, concurrencyLimit, headers });
+                const caPath =
+                    process.env.OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE ?? process.env.OTEL_EXPORTER_OTLP_CERTIFICATE;
+
+                const ca = caPath ? fs.readFileSync(caPath) : undefined;
+                return new OTLPTraceExporter({
+                    url,
+                    concurrencyLimit,
+                    headers,
+                    httpAgentOptions: ca ? { ca } : undefined
+                });
             }
             case 'otlp-grpc': {
                 const { url, concurrencyLimit = 10, headers } = e!;
@@ -105,11 +114,24 @@ function resolveExporter(opts: {
                     }
                 }
 
+                const caPath =
+                    process.env.OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE ?? process.env.OTEL_EXPORTER_OTLP_CERTIFICATE;
+
+                const rootCert = caPath ? fs.readFileSync(caPath) : undefined;
+
+                const keyPath = process.env.OTEL_EXPORTER_OTLP_CLIENT_KEY;
+                const certPath = process.env.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE;
+                const privateKey = keyPath ? fs.readFileSync(keyPath) : undefined;
+                const clientCert = certPath ? fs.readFileSync(certPath) : undefined;
+
+                const credentials = grpc.credentials.createSsl(rootCert, privateKey, clientCert);
+
                 return new OTLPTraceExporterGrpc({
                     url: url,
                     headers: headers,
                     concurrencyLimit: concurrencyLimit,
-                    metadata: metadata
+                    metadata: metadata,
+                    credentials: credentials
                 });
             }
         }
