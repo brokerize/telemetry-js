@@ -261,14 +261,72 @@ Below is the documentation for implementing metrics.
 All used modules are easily available via `import`:
 
 ```typescript
-import { Metrics } from '@brokerize/telemetry';
-import { metrics } from '@brokerize/telemetry';
+import { Metrics, metrics, MetricType, defineMetrics } from '@brokerize/telemetry';
 import { httpMetricsMiddleWare } from '@brokerize/telemetry';
 ```
 
 - `metrics` - Wrapper to use, create, and manage metrics. This class also provides the export of metrics with the `metrics.getMetrics()` method.
 - `httpMetricsMiddleWare` - Middleware that creates and manages metrics for HTTP requests. This middleware can be used in Express.js or other HTTP servers to automatically capture metrics for incoming requests.
 - `Metrics` - The `Metrics` class, which creates and manages metrics and provides annotations for easily creating metrics. This class offers a simple way to create and use metrics without manually registering them.
+- `defineMetrics` - Helper for defining metrics in one place with TypeScript name/label checking and automatic registration.
+
+## Recommended: Typed Metric Definitions (`defineMetrics`)
+
+When metrics are registered manually using `metrics.createMetric(...)`, the metric name is a plain `string`. TypeScript cannot validate at compile time that the name exists.
+
+To get compile-time checking for metric names (and optionally labels), define your metrics once using `defineMetrics(...)` and use the returned typed helper to update them.
+
+### Example
+
+```typescript
+import { defineMetrics } from '@brokerize/telemetry';
+
+export const telemetry = defineMetrics({
+  counters: {
+    exmaple_counter_total: {
+      help: 'Some example counter without labels'
+    },
+    exampel_counter2_total_total: {
+      help: 'Some example counter with labels',
+      labelNames: ['status', 'method'] as const
+    }
+  },
+
+  gauges: {
+    example_gauge: {
+      help: 'Some example gauge with labels',
+      labelNames: ['region'] as const
+    }
+  },
+
+  histograms: {
+    example_histogram: {
+      help: 'Some example histogram with labels',
+      labelNames: ['jobtype', 'isShallow'] as const,
+      buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000] as const
+    }
+  }
+} as const);
+```
+
+### Using typed metrics
+
+```typescript
+import { telemetry } from './telemetry';
+
+telemetry.incrementCounter('exmaple_counter_total', { status: 200, method: 'GET' }); // ✅
+telemetry.incrementCounter('does_not_exist_total'); // ❌ compile-time error
+
+telemetry.incrementCounter('exmaple_counter_total', { foo: 1 }); // ❌ compile-time error (label not allowed)
+telemetry.incrementCounter('exmaple_counter_total', { status: 200 }); // ❌ compile-time error (missing label)
+```
+
+### Notes / Best Practices
+
+- `defineMetrics(...)` **registers all metrics immediately**, so it should be called during application startup.
+- Avoid registering the same metric twice (e.g., `defineMetrics(...)` **and** separate `metrics.createMetric(...)` for the same name).
+
+---
 
 ### Usage via Annotations
 

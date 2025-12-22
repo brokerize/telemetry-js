@@ -104,6 +104,45 @@ metrics.createMetric(MetricType.Counter, {
 metrics.incrementCounter('http_requests_total', { method: 'GET', status: '200' });
 ```
 
+#### Recommended (v2.0.4): Typed Metric Definitions (`defineMetrics`)
+
+When metrics are registered manually using `metrics.createMetric(...)`, the metric name is a plain `string`. TypeScript cannot validate at compile time that the name exists.
+
+To get compile-time checking for metric names (and optionally labels), define your metrics once using `defineMetrics(...)` and use the returned typed helper to update them.
+
+```ts
+import { defineMetrics } from '@brokerize/telemetry';
+
+export const telemetry = defineMetrics({
+  counters: {
+    http_requests_total: {
+      help: 'Total number of HTTP requests',
+      labelNames: ['method', 'status'] as const
+    }
+  },
+
+  gauges: {
+    app_active_users: {
+      help: 'Number of currently active users'
+    }
+  }
+} as const);
+```
+
+Usage:
+
+```ts
+import { telemetry } from './telemetry';
+
+telemetry.incrementCounter('http_requests_total', { method: 'GET', status: '200' }); // ✅
+telemetry.incrementCounter('does_not_exist_total'); // ❌ compile-time error
+telemetry.incrementCounter('http_requests_total', { foo: 'bar' }); // ❌ compile-time error (label not allowed)
+```
+
+Notes:
+- `defineMetrics(...)` **registers metrics immediately**. Call it during startup.
+- Avoid registering the same metric twice (e.g., `defineMetrics(...)` and separate `metrics.createMetric(...)` for the same name).
+
 For detailed usage, see `./docs/telemetry/metrics.md`.
 
 ### Tracing
@@ -172,6 +211,11 @@ async function processRequest() {
 > **Legacy helper** `getCurrentSpanOrCreateNew(spanName, options, createNewSpan, moduleName)` is still supported, but prefer `getSpan(spanName, options, startMode, moduleName)` going forward. Likewise, prefer `startMode` over `createNewSpan`.
 
 ## Changes in v2.x
+
+### Metrics (v2.0.4)
+
+- **New:** `defineMetrics(...)` helper that lets consumers define metrics once and get **TypeScript-checked** metric names (and optional label checking).
+- Existing APIs (`metrics.createMetric(...)`, `metrics.incrementCounter(...)`, decorators) continue to work.
 
 ### Initialization changes (exporters & processors)
 
