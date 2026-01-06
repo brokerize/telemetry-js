@@ -8,9 +8,10 @@ type RouterWithStack = { stack: Layer[] };
 type AppWithRouters = { router?: RouterWithStack; _router?: RouterWithStack };
 
 function getRouterStack(req: Request): Layer[] {
+    //Due to changes in express versions, the router can be in different places.
+    //In v4 it's usually in req.app._router, in v5 it's back to req.app.router. Therefore, we need to check both.
     const app = req.app as any;
 
-    // lieber NICHT den ganzen stack loggen
     const router = app._router ?? app.router;
     const stack = router?.stack;
     return Array.isArray(stack) ? stack : [];
