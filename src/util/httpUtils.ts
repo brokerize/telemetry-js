@@ -1,34 +1,44 @@
 import type { Request } from 'express';
 
 interface Layer {
-    route?: { path: string };
+    route?: { path?: string | RegExp | Array<string | RegExp> };
+}
+
+type RouterWithStack = { stack: Layer[] };
+type AppWithRouters = { router?: RouterWithStack; _router?: RouterWithStack };
+
+function getStack(req: Request): Layer[] {
+    const app = req.app as unknown as AppWithRouters;
+    const stack = app.router?.stack ?? app._router?.stack;
+    return Array.isArray(stack) ? stack : [];
+}
+
+function matchesLayerPath(layer: Layer, pathname: string): boolean {
+    const p = layer.route?.path;
+    if (!p) return false;
+
+    const matchOne = (x: string | RegExp) => {
+        if (x instanceof RegExp) return x.test(pathname);
+        const routeRegex = new RegExp('^' + x.replace(/:\w+/g, '[^/]+') + '$');
+        return routeRegex.test(pathname);
+    };
+
+    return Array.isArray(p) ? p.some(matchOne) : matchOne(p);
 }
 
 export function isKnownRoute(req: Request): boolean {
     const sanitizedPath = req.path.split('#')[0];
-
-    return req.app._router.stack.some((layer: Layer) => {
-        if (!layer.route || !layer.route.path) return false;
-
-        const routeRegex = new RegExp('^' + layer.route.path.replace(/:\w+/g, '[^/]+') + '$');
-
-        return routeRegex.test(sanitizedPath);
-    });
+    return getStack(req).some((layer) => matchesLayerPath(layer, sanitizedPath));
 }
 
 export function getRoutePattern(req: Request): string {
     const sanitizedUrl = req.originalUrl.split('#')[0].split('?')[0];
 
-    const matchedRoute = req.app._router.stack.find((layer: Layer) => {
-        if (!layer.route || !layer.route.path) return false;
+    const matched = getStack(req).find((layer) => matchesLayerPath(layer, sanitizedUrl));
+    const p = matched?.route?.path;
 
-        const routeRegex = new RegExp('^' + layer.route.path.replace(/:\w+/g, '[^/]+') + '$');
-
-        return routeRegex.test(sanitizedUrl);
-    });
-
-    const routePattern = matchedRoute?.route?.path || sanitizedUrl;
-    return routePattern;
+    if (typeof p === 'string') return p;
+    return sanitizedUrl;
 }
 
 export function convertStatusToStatusLabel(status: number): string {

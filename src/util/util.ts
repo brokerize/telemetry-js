@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 export function getCallerFile() {
     const originalFunc = Error.prepareStackTrace;
 
@@ -28,4 +30,16 @@ export function getCallerFile() {
     Error.prepareStackTrace = originalFunc;
 
     return callerFile || '';
+}
+
+const require = createRequire(import.meta.url);
+
+export function getExpressMajor(): number | undefined {
+    try {
+        const pkg = require('express/package.json') as { version?: string };
+        const major = Number(pkg.version?.split('.')[0]);
+        return Number.isFinite(major) ? major : undefined;
+    } catch {
+        return undefined;
+    }
 }

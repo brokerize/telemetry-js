@@ -3,7 +3,7 @@ import * as PromClient from 'prom-client';
 import { Metrics } from './metricsDecorator.ts';
 import { CounterConfiguration, GaugeConfiguration, HistogramConfiguration, SummaryConfiguration } from 'prom-client';
 
-export const httpRequestDurationMicroseconds = new PromClient.Histogram({
+export const httpRequestDurationSeconds = new PromClient.Histogram({
     name: 'http_request_duration_seconds',
     help: 'Dauer von HTTP-Anfragen in Sekunden',
     labelNames: ['method', 'status_code'],
