@@ -6,3 +6,5 @@ export * from './metrics/metricsDecorator.ts';
 export * from './tracing/tracingDecorator.ts';
 
 export * from './instrumentation.ts';
+export { getRoutePattern, isKnownRoute, convertStatusToStatusLabel } from './util/httpUtils.ts';
+export { getCallerFile } from './util/util.ts';

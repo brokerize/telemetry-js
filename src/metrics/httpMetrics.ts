@@ -14,9 +14,15 @@ export const httpMetricsMiddleWare: RequestHandler = (req, res, next) => {
         const diff = process.hrtime(start);
         const durationInSeconds = diff[0] + diff[1] / 1e9;
 
-        httpRequestDurationSeconds.labels(req.method, res.statusCode.toString()).observe(durationInSeconds);
-        httpRequestCounter.labels(req.method, routePattern, res.statusCode.toString()).inc();
-        httpRequestDurationSum.labels(req.method, routePattern, res.statusCode.toString()).inc(durationInSeconds);
+        httpRequestDurationSeconds
+            .labels({ method: req.method, status_code: res.statusCode.toString() })
+            .observe(durationInSeconds);
+        httpRequestCounter
+            .labels({ method: req.method, route: routePattern, status_code: res.statusCode.toString() })
+            .inc();
+        httpRequestDurationSum
+            .labels({ method: req.method, route: routePattern, status_code: res.statusCode.toString() })
+            .inc(durationInSeconds);
     });
 
     next();
