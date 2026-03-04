@@ -310,22 +310,22 @@ export interface InitOptions {
  * });
  */
 export function initInstrumentation(options: InitOptions) {
-    diag.info('Initializing OpenTelemetry instrumentation');
+    safeDiag('info', 'Initializing OpenTelemetry instrumentation');
     if (options.serverCerts && options.serverCerts.length > 0) {
-        diag.info('Installing extra internal CA certificates from options');
+        safeDiag('info', 'Installing extra internal CA certificates from options');
         installInternalCaFromEnv(options.serverCerts, options.clientKey, options.clientCert);
     }
     if (options.instrumentations && options.instrumentations.length > 0) {
-        diag.info('Using instrumentations:');
+        safeDiag('info', 'Using instrumentations:');
         options.instrumentations.forEach((instrumentation) => {
             if (instrumentation?.constructor?.name) {
-                diag.info(`- ${instrumentation.constructor.name}`);
+                safeDiag('info', `Using instrumentation: ${instrumentation.constructor.name}`);
             } else {
-                diag.warn('An instrumentation was provided without a valid constructor name.');
+                safeDiag('warn', 'An instrumentation was provided without a valid constructor name.');
             }
         });
     } else {
-        diag.info('No instrumentations specified, using none.');
+        safeDiag('info', 'No instrumentations specified, using none.');
     }
 
     contextManager = new AsyncLocalStorageContextManager().enable();
@@ -354,7 +354,7 @@ export function initInstrumentation(options: InitOptions) {
             ...options.spanLimits
         };
         setEnableSpanLimits(true);
-        diag.info('Span limits enabled: ' + JSON.stringify(spanLimitOptions));
+        safeDiag('info', 'Span limits enabled: ' + JSON.stringify(spanLimitOptions));
     }
 
     sdk = new NodeSDK({
@@ -363,6 +363,7 @@ export function initInstrumentation(options: InitOptions) {
         spanProcessors: processors,
         ...(processors?.length ? {} : { traceExporter: exporter }),
         spanLimits: spanLimitOptions,
+        metricReaders: [],
         instrumentations: options.instrumentations || []
     });
 
@@ -370,7 +371,7 @@ export function initInstrumentation(options: InitOptions) {
 
     sdk.start();
     maybeWarnLegacy(diag);
-    diag.info('Tracing initialized');
+    safeDiag('info', 'Tracing initialized');
 
     return {
         sdk,
@@ -385,28 +386,28 @@ export function initInstrumentation(options: InitOptions) {
  */
 export async function shutDownInstrumentation() {
     try {
-        diag.info('Shutting down OpenTelemetry instrumentation');
+        safeDiag('info', 'Shutting down OpenTelemetry instrumentation');
 
         if (!sdk) {
-            diag.warn('No OpenTelemetry SDK instance found. Nothing to shut down.');
+            safeDiag('warn', 'No OpenTelemetry SDK instance found. Nothing to shut down.');
             return;
         }
 
         if (!createdTraceExporter) {
-            diag.warn('No trace exporter found. Nothing to shut down.');
+            safeDiag('warn', 'No trace exporter found. Nothing to shut down.');
         } else {
             if (typeof createdTraceExporter.forceFlush === 'function') {
                 await createdTraceExporter.forceFlush().catch((err) => {
-                    diag.warn('OTLP forceFlush failed. Ignoring and continuing shutdown.', err);
+                    safeDiag('warn', 'OTLP forceFlush failed. Ignoring and continuing shutdown.', err);
                 });
             }
             await createdTraceExporter.shutdown().catch((err) => {
-                diag.warn('OTLP shutdown failed. Ignoring and continuing shutdown.', err);
+                safeDiag('warn', 'OTLP shutdown failed. Ignoring and continuing shutdown.', err);
             });
         }
 
         await sdk.shutdown().catch((err) => {
-            diag.warn('OpenTelemetry SDK shutdown failed. Ignoring and continuing shutdown.', err);
+            safeDiag('warn', 'OpenTelemetry SDK shutdown failed. Ignoring and continuing shutdown.', err);
         });
 
         trace.disable();
@@ -419,8 +420,19 @@ export async function shutDownInstrumentation() {
         contextManager = undefined;
         sdk = undefined;
 
-        diag.info('Instrumentation shut down successfully.');
+        safeDiag('info', 'Instrumentation shut down successfully.');
     } catch (error) {
-        diag.error('Unexpected error in shutDownInstrumentation (but process will continue):', error);
+        safeDiag('error', 'Unexpected error in shutDownInstrumentation (but process will continue):', error);
+    }
+}
+
+function safeDiag(method: 'info' | 'warn' | 'error', ...args: unknown[]) {
+    try {
+        const fn = diag[method];
+        if (typeof fn === 'function') {
+            fn(...(args as Parameters<typeof fn>));
+        }
+    } catch {
+        // ignore logging errors during shutdown
     }
 }
