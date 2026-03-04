@@ -1,6 +1,6 @@
 {
   "name": "@brokerize/telemetry",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "A telemetry package for metrics and tracing powered by brokerize",
   "keywords": [
     "telemetry",
@@ -53,13 +53,17 @@
   },
   "overrides": {
     "eslint": {
-      "ajv": "^8.18.0"
+      "ajv": "^8.18.0",
+      "minimatch": "^10.2.4"
     },
     "@typescript-eslint/typescript-estree": {
-      "minimatch": "^10.2.1"
+      "minimatch": "^10.2.4"
     },
     "typescript-strict-plugin": {
-      "minimatch": "^10.2.1"
+      "minimatch": "^10.2.4"
+    },
+    "vite": {
+      "rollup": "^4.59.0"
     }
   },
   "dependencies": {
