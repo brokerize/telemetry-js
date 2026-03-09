@@ -29,8 +29,16 @@ jobs:
             echo "Package version ($PKG_VERSION) does not match tag ($TAG_VERSION)"
             exit 1
           fi
-      - run: |
-          echo @brokerize:https://registry.npmjs.org > .npmrc
+      - name: Publish to npmjs
+        run: |
+          echo @brokerize:registry=https://registry.npmjs.org > .npmrc
           echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' >> .npmrc
-      - run: npm publish
-        working-directory: ./
+          npm publish
+
+      - name: Publish to GitHub Packages
+        run: |
+          echo @brokerize:registry=https://npm.pkg.github.com > .npmrc
+          echo '//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}' >> .npmrc
+          npm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
