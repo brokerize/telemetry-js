@@ -135,7 +135,6 @@ function resolveExporter(opts: {
 
                 return new OTLPTraceExporterGrpc({
                     url: url,
-                    headers: headers,
                     concurrencyLimit: concurrencyLimit,
                     metadata: metadata ? metadata : undefined,
                     credentials: credentials

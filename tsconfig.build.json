@@ -21,9 +21,6 @@
         "experimentalDecorators": true,
         "rewriteRelativeImportExtensions": true
     },
-    "paths": {
-        "tsoa": ["node_modules/tsoa/dist"]
-    },
     "strict": false,
     "ts-node": {
         "swc": true
