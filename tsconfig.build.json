@@ -2,28 +2,7 @@
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
         "rootDir": "./src",
-        "outDir": "dist",
-        "declaration": true,
-        "declarationMap": false,
-        "lib": ["ES2021", "DOM"],
-        "sourceMap": true,
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "strictNullChecks": true,
-        "target": "ES2022",
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "removeComments": false,
-        "preserveConstEnums": true,
-        "resolveJsonModule": true,
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "experimentalDecorators": true,
-        "rewriteRelativeImportExtensions": true
-    },
-    "strict": false,
-    "ts-node": {
-        "swc": true
+        "outDir": "dist"
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "test/**"]

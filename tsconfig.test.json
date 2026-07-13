@@ -4,14 +4,7 @@
         "noEmit": true,
         "types": ["node", "vitest"],
         "rootDir": ".",
-        "experimentalDecorators": true,
-        "allowImportingTsExtensions": true,
-        "plugins": [
-            {
-                "name": "typescript-strict-plugin",
-                "paths": ["./src", "./test"]
-            }
-        ]
+        "allowImportingTsExtensions": true
     },
     "include": ["src/**/*", "test/**/*"],
     "exclude": ["node_modules"]
